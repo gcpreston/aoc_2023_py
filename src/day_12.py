@@ -33,8 +33,13 @@ def partitions(n: int, k: int):
         yield [b - a - 1 for a, b in zip((-1,) + c, c + (n + k - 1,))]
 
 
+def unfold(template: str, groups: list[int]) -> (str, list[int]):
+    template_rep = [template] * 5
+    return ('?'.join(template_rep), groups * 5)
+
+
 def main():
-    with open('input/day_12.txt') as f:
+    with open('input/test.txt') as f:
         contents = f.readlines()
 
     grand_total = 0
@@ -43,6 +48,8 @@ def main():
         row_total = 0
         condition_template, groups = row.split(' ')
         groups = list(map(int, groups.split(',')))
+
+        condition_template, groups = unfold(condition_template, groups)
 
         extra_space_count = len(condition_template) - (sum(groups) + (len(groups) - 1))
         slot_count = len(groups) + 1
@@ -57,7 +64,7 @@ def main():
         grand_total += row_total
         print("template and total", condition_template, row_total)
 
-    print("Day 12 part 1:", grand_total)
+    print("Day 12 part 2:", grand_total)
 
 
 
