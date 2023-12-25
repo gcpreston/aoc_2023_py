@@ -80,10 +80,13 @@ class Contraption:
     input: list[str]
     beams: list[Beam]
     seen = set()
+    energized = set()
 
-    def __init__(self, input: list[str]):
+    def __init__(self, input: list[str], start_position: (int, int), start_direction: str):
         self.input = input
-        self.beams = [Beam((0, 0), '>')]
+        self.beams = [Beam(start_position, start_direction)]
+        self.seen = set([(start_position[0], start_position[1], start_direction)])
+        self.energized = set([start_position])
 
     def tick(self):
         new_beams = []
@@ -91,35 +94,51 @@ class Contraption:
         for beam in self.beams:
             row, col = beam.position
             if row >= 0 and row < len(self.input) and col >= 0 and col < len(self.input[row]):
+                pos_and_dir = (row, col, beam.direction)
+                self.seen.add(pos_and_dir)
+                self.energized.add(beam.position)
+
                 next_beams = beam.tick(self.input[row][col])
 
                 for n in next_beams:
                     pos_and_dir = (n.position[0], n.position[1], n.direction)
                     if pos_and_dir not in self.seen:
-                        self.seen.add(pos_and_dir)
                         new_beams.append(n)
 
         self.beams = new_beams
 
 
-def num_energized(input: list[str]) -> int:
-    contraption = Contraption(input)
-    energized_positions = set(contraption.beams[0].position)
+def num_energized(input: list[str], start_position: (int, int), start_direction: str) -> int:
+    contraption = Contraption(input, start_position, start_direction)
 
     while contraption.beams:
         contraption.tick()
 
-        for beam in contraption.beams:
-            energized_positions.add(beam.position)
-
-    return len(energized_positions)
+    return len(contraption.energized)
 
 
 def main():
-    with open('input/test.txt') as f:
+    with open('input/day_16.txt') as f:
         input = [line.strip() for line in f.readlines()]
 
-    print("Day 16 part 1:", num_energized(input))
+    most_energized = 0
+    for row in range(len(input)):
+        right_test = num_energized(input, (row, 0), '>')
+        left_test = num_energized(input, (row, len(input[0]) - 1), '<')
+        higher = max(right_test, left_test)
+
+        if higher > most_energized:
+            most_energized = higher
+
+    for col in range(len(input[0])):
+        down_test = num_energized(input, (0, col), 'v')
+        up_test = num_energized(input, (len(input) - 1, col), '^')
+        higher = max(down_test, up_test)
+
+        if higher > most_energized:
+            most_energized = higher
+
+    print("Day 16 part 2:", most_energized)
 
 
 if __name__ == '__main__':
