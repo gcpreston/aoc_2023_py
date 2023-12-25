@@ -62,6 +62,63 @@ class PriorityQueue:
     def get(self) -> T:
         return heapq.heappop(self.elements)[1]
 
+def dijkstra_search(graph: WeightedGraph, start: Location, goal: Location):
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from: dict[Location, Optional[Location]] = {}
+    cost_so_far: dict[Location, float] = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
+
+    directions: dict[Location, str] = {}
+
+    while not frontier.empty():
+        current: Location = frontier.get()
+
+        if current == goal:
+            break
+
+        for next in graph.neighbors(current):
+            new_cost = cost_so_far[current] + graph.cost(current, next)
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+
+                # skip if we've been going straight too long
+                if current[0] == next[0]:
+                    if current[1] < next[1]:
+                        direction = '>'
+                    else:
+                        direction = '<'
+                else:
+                    if current[0] < next[0]:
+                        direction = 'v'
+                    else:
+                        direction = '^'
+
+                max_repeats = 3
+                last_few = [direction, directions.get(current, None)]
+                last_few_positions = [next, current]
+                previous = current
+
+                for _ in range(max_repeats - 1):
+                    previous = came_from[previous]
+                    if previous is None:
+                        break
+                    last_few.append(directions.get(previous, None))
+                    last_few_positions.append(previous)
+
+                if len(last_few) == max_repeats + 1 and len(set(last_few)) == 1:
+                    print('skipping', next, list(reversed(last_few)), list(reversed(last_few_positions)))
+                    continue
+
+                cost_so_far[next] = new_cost
+                priority = new_cost
+                frontier.put(next, priority)
+                came_from[next] = current
+
+                directions[next] = direction
+
+    return came_from, cost_so_far, directions
+
 def heuristic(a: GridLocation, b: GridLocation) -> float:
     (x1, y1) = a
     (x2, y2) = b
@@ -86,11 +143,44 @@ def a_star_search(graph: WeightedGraph, start: Location, goal: Location):
         for next in graph.neighbors(current):
             new_cost = cost_so_far[current] + graph.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
+
+                # skip if we've been going straight too long
+                if current[0] == next[0]:
+                    if current[1] < next[1]:
+                        direction = '>'
+                    else:
+                        direction = '<'
+                else:
+                    if current[0] < next[0]:
+                        direction = 'v'
+                    else:
+                        direction = '^'
+
+                max_repeats = 3
+                last_few = [direction, directions.get(current, None)]
+                last_few_positions = [next, current]
+                previous = current
+
+                for _ in range(max_repeats - 1):
+                    previous = came_from.get(previous, None)
+                    if previous is None:
+                        break
+                    last_few.append(directions.get(previous, None))
+                    last_few_positions.append(previous)
+
+                if len(last_few) == max_repeats + 1 and len(set(last_few)) == 1:
+                    print('skipping', next, list(reversed(last_few)), list(reversed(last_few_positions)))
+                    continue
+
                 cost_so_far[next] = new_cost
                 priority = new_cost + heuristic(next, goal)
                 frontier.put(next, priority)
                 came_from[next] = current
 
+                # add direction
+                directions[next] = direction
+
+    return came_from, cost_so_far, directions
 
 def reconstruct_path(came_from: dict[Location, Location],
                      start: Location, goal: Location) -> list[Location]:
