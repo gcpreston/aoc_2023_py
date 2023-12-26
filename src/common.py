@@ -1,26 +1,46 @@
 # https://www.redblobgames.com/pathfinding/a-star/implementation.html
 
 import heapq
+import collections
 
 from typing import Tuple, TypeVar, Iterator, Optional
 
 Location = TypeVar('Location')
 GridLocation = Tuple[int, int]
+T = TypeVar('T')
+
+class Queue:
+    def __init__(self):
+        self.elements = collections.deque()
+
+    def empty(self) -> bool:
+        return not self.elements
+
+    def put(self, x: T):
+        self.elements.append(x)
+
+    def get(self) -> T:
+        return self.elements.popleft()
+
+    def __repr__(self) -> str:
+        return str(list(self.elements))
 
 
 class Graph:
     def neighbors(self, id: Location) -> list[Location]: pass
 
 
-class SquareGrid:
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.walls: list[GridLocation] = []
+class SquareGrid(Graph):
+    def __init__(self, min_x: int, max_x: int, min_y: int, max_y: int, walls: list[GridLocation]):
+        self.min_x = min_x
+        self.max_x = max_x
+        self.min_y = min_y
+        self.max_y = max_y
+        self.walls: list[GridLocation] = walls
 
     def in_bounds(self, id: GridLocation) -> bool:
         (x, y) = id
-        return 0 <= x < self.width and 0 <= y < self.height
+        return self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y
 
     def passable(self, id: GridLocation) -> bool:
         return id not in self.walls
@@ -40,14 +60,12 @@ class WeightedGraph(Graph):
 
 
 class GridWithWeights(SquareGrid, WeightedGraph):
-    def __init__(self, width: int, height: int):
-        super().__init__(width, height)
+    def __init__(self, min_x: int, max_x: int, min_y: int, max_y: int):
+        super().__init__(min_x, max_x, min_y, max_y)
         self.weights: dict[GridLocation, float] = {}
 
     def cost(self, from_node: GridLocation, to_node: GridLocation) -> float:
         return self.weights.get(to_node, 1)
-
-T = TypeVar('T')
 
 class PriorityQueue:
     def __init__(self):
@@ -194,3 +212,20 @@ def reconstruct_path(came_from: dict[Location, Location],
     path.append(start) # optional
     path.reverse() # optional
     return path
+
+def breadth_first_search(graph: Graph, start: Location):
+    frontier = Queue()
+    frontier.put(start)
+    came_from: dict[Location, Optional[Location]] = {}
+    came_from[start] = None
+
+    while not frontier.empty():
+        current: Location = frontier.get()
+
+        for next in graph.neighbors(current):
+            if next not in came_from:
+                frontier.put(next)
+                came_from[next] = current
+
+    return came_from
+
